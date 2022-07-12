@@ -10,7 +10,12 @@
           class="elevation-4"
           :sort-by="['departureDate', 'returnDate']"
           :sort-desc="[false, false]"
-        ></v-data-table>
+          style="cursor:pointer"
+        >
+          <template v-slot:[`item.actions`]="{ item }">
+            <v-btn color="#f9ba15" rounded x-small class="mr-2" @click="select(item)"> Ver detalle </v-btn>
+          </template></v-data-table
+        >
       </v-col>
     </v-row>
   </v-container>

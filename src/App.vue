@@ -88,6 +88,7 @@ export default {
       { text: "Asientos disponibles (IDA)", value: "availabilityOnDeparture" },
       { text: "Asientos disponibles (VUELTA)", value: "availabilityOnReturn" },
       { text: "Días de vacaciones", value: "vacationDays" },
+      { text: 'Actions', value: 'actions', sortable: false },
     ],
     show: false,
     loading: false,

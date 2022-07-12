@@ -80,7 +80,6 @@
                   v-model="noLimit"
                   label="Sin limite"
                   color="#f9ba15"
-                  @change="exactDays()"
                 ></v-switch>
               </div>
             </template>
@@ -105,7 +104,7 @@
           >
             <template v-slot:activator="{ on, attrs }">
               <v-text-field
-                v-model="dates"
+                v-model="dateRangeText"
                 label="Rango de fechas"
                 prepend-icon="mdi-calendar"
                 readonly
@@ -136,7 +135,6 @@
                   v-model="exactDateSearch"
                   label="Fecha exacta"
                   color="#f9ba15"
-                  @change="exactDate()"
                 ></v-switch>
               </div>
             </template>
@@ -158,7 +156,7 @@
           large
           color="#f9ba15"
           @click="filterFlights"
-          >Buscar vuelos!</v-btn
+          >Buscar vuelos</v-btn
         ></v-col
       >
     </v-card>
@@ -177,7 +175,7 @@ export default {
       destination: "",
       price: "",
     },
-    dates: [],
+    dates: ["2021-11-15", "2021-12-15"],
     menuDates: false,
     tableFlights: [],
     exactDateSearch: false,
@@ -284,10 +282,28 @@ export default {
     },
   },
 
+  computed: {
+    dateRangeText() {
+      return this.dates.join(" - ");
+    },
+  },
+
   watch: {
     dates() {
       if (this.dates[0] > this.dates[1]) {
         this.dates.sort();
+      }
+      const diff = this.daysOfVacations(this.dates[1], this.dates[0]);
+      if (diff < this.totalDays) {
+        this.totalDays = diff
+      }
+    },
+
+    exactDateSearch() {
+      if (this.exactDateSearch === true) {
+        this.noLimit = true;
+      } else {
+        this.noLimit = false;
       }
     },
   },

@@ -26,7 +26,7 @@
             item-text="name"
             item-value="value"
             menu-props="auto"
-            label="Destino"
+            label="Destino (Opcional)"
             hide-details
             :items="destinations"
             prepend-icon="mdi-map"
@@ -50,6 +50,7 @@
             :items="prices"
             prepend-icon="mdi-map"
             single-line
+            color="#f9ba15"
             ><template v-slot:prepend>
               <v-icon color="#f9ba15"> mdi-currency-usd </v-icon>
             </template></v-select
@@ -59,13 +60,39 @@
 
       <v-row class="mx-2 mt-5">
         <v-col cols="12" md="4">
-          <div class="text-left"><strong> Días de vacaciones</strong></div>
-          <v-radio-group class="mt-1" v-model="radio" row :disabled="disabled" >
-            <v-radio color="#f9ba15" label="7 días" :value="7"></v-radio>
-            <v-radio color="#f9ba15" label="14 días" :value="14"></v-radio>
-            <v-radio color="#f9ba15" label="21 días" :value="21"></v-radio>
-            <v-radio color="#f9ba15" label="Sin limite" value=""></v-radio>
-          </v-radio-group>
+          <v-slider
+            :disabled="noLimit"
+            class="mt-md-7 mt-5"
+            color="#f9ba15"
+            v-model="totalDays"
+            label="Días de vacaciones"
+            thumb-color="#f9ba15"
+            thumb-label="always"
+            track-color="gray"
+          ></v-slider>
+        </v-col>
+        <v-col cols="12" md="2" class="pt-0">
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <div v-bind="attrs" v-on="on">
+                <v-switch
+                  class="mt-md-9 mt-0 ml-md-4 ml-0"
+                  v-model="noLimit"
+                  label="Sin limite"
+                  color="#f9ba15"
+                  @change="exactDays()"
+                ></v-switch>
+              </div>
+            </template>
+            <span v-if="!noLimit"
+              >Activar esta opción hará que se muestren todas las posibilidades
+              de días de vacaciones en cada vuelo.
+            </span>
+            <span v-else
+              >Desactivar esta opción filtrará los resultados en base a la
+              cantidad de días de vacaciones que se deseen.</span
+            >
+          </v-tooltip>
         </v-col>
         <v-col cols="12" md="4">
           <v-menu
@@ -84,6 +111,7 @@
                 readonly
                 v-bind="attrs"
                 v-on="on"
+                color="#f9ba15"
               >
                 <template v-slot:prepend>
                   <v-icon color="#f9ba15"> mdi-calendar</v-icon>
@@ -95,23 +123,41 @@
               range
               no-title
               @change="menuDates = false"
+              color="#f9ba15"
             ></v-date-picker>
           </v-menu>
         </v-col>
-        <v-col v-if="dates[0] && dates[1]" cols="12" md="4" class="pt-0">
-          <strong
-            ><v-switch
-              class="mt-md-9 mt-0 ml-md-4 ml-0"
-              v-model="switch1"
-              label="Fecha exacta"
-              color="#f9ba15"
-              @change="exactDate()"
-            ></v-switch
-          ></strong>
+        <v-col v-if="dates[0] && dates[1]" cols="12" md="2" class="pt-0">
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <div v-bind="attrs" v-on="on">
+                <v-switch
+                  class="mt-md-9 mt-0 ml-md-4 ml-0"
+                  v-model="exactDateSearch"
+                  label="Fecha exacta"
+                  color="#f9ba15"
+                  @change="exactDate()"
+                ></v-switch>
+              </div>
+            </template>
+            <span v-if="!exactDateSearch"
+              >Activar esta opción hará que se busque la fecha exacta de salida
+              y retorno.
+            </span>
+            <span v-else
+              >Desactivar esta opción mostrará los posibles vuelos dentro del
+              rango de fechas establecido</span
+            >
+          </v-tooltip>
         </v-col>
       </v-row>
       <v-col cols="12" class="text-center"
-        ><v-btn :disabled="!flight.price || !flight.origin" rounded large color="#f9ba15" @click="filterFlights"
+        ><v-btn
+          :disabled="!flight.price || !flight.origin"
+          rounded
+          large
+          color="#f9ba15"
+          @click="filterFlights"
           >Buscar vuelos!</v-btn
         ></v-col
       >
@@ -134,15 +180,17 @@ export default {
     dates: [],
     menuDates: false,
     tableFlights: [],
-    switch1: false,
-    switch2: true,
-    radio: 14,
+    exactDateSearch: false,
+    noLimit: false,
+    totalDays: 14,
     disabled: false,
   }),
 
   methods: {
     filterFlights() {
-      this.tableFlights = [];
+      this.tableFlights = []; //Reseteo de tabla
+
+      // Separación entre vuelos de ida y vuelta
       const ida = this.flights.filter((flight) => {
         return (
           flight.origin === this.flight.origin &&
@@ -151,6 +199,7 @@ export default {
           (flight.data >= this.dates[0] || !this.dates[0])
         );
       });
+
       const vuelta = this.flights.filter((flight) => {
         return (
           flight.destination === this.flight.origin &&
@@ -159,28 +208,32 @@ export default {
           (flight.data <= this.dates[1] || !this.dates[1])
         );
       });
-      const nuevoArray = [];
-      for (let i in ida) {
-        for (let j in vuelta) {
+
+      //Funcion para buscar coincidencias en base a los criterios de filtrado
+      const flightsFiltered = [];
+      for (let i = 0; i < ida.length; i++) {
+        for (let j = 0; j < vuelta.length; j++) {
           if (
-            (ida[i].price + vuelta[j].price < this.flight.price ||
+            (ida[i].price + vuelta[j].price <= this.flight.price ||
               !this.flight.price) &&
             vuelta[j].data > ida[i].data &&
             ida[i].destination === vuelta[j].origin
           ) {
-            nuevoArray.push(ida[i], vuelta[j]);
+            flightsFiltered.push(ida[i], vuelta[j]);
           }
         }
       }
 
-      const vuelosFinales = [];
-      for (let i = 0; i < nuevoArray.length; i += 2) {
-        vuelosFinales.push(nuevoArray.slice(i, i + 2));
+      //Se crea un nuevo array con datos de 2 vuelos, uno de ida y otro de vuelta
+      const packDepartureReturn = [];
+      for (let i = 0; i < flightsFiltered.length; i += 2) {
+        packDepartureReturn.push(flightsFiltered.slice(i, i + 2));
       }
 
-      vuelosFinales.forEach((e) => {
+      //Se arma el objeto que se mostrará en la tabla en base a los dos pares de vuelos filtrados previamente
+      packDepartureReturn.forEach((e) => {
         const fly = {
-          totalPrice: e[0].price + e[1].price,
+          totalPrice: `$ ${(e[0].price + e[1].price).toFixed(2)}`,
           priceDeparture: e[0].price,
           priceReturn: e[1].price,
           origin: e[0].origin,
@@ -194,9 +247,9 @@ export default {
         this.tableFlights.push(fly);
       });
 
-      if (this.switch1) this.exactDate();
-      if (this.radio) this.twoWeeks();
-      this.modal = false;
+      if (this.exactDateSearch) this.exactDate();
+      if (!this.noLimit) this.exactDays();
+
       this.$emit("flightsFiltered", this.tableFlights);
     },
     exactDate() {
@@ -207,12 +260,11 @@ export default {
       });
       this.tableFlights = exact;
     },
-
-    twoWeeks() {
-      const twoWeeks = this.tableFlights.filter((f) => {
-        return f.vacationDays === this.radio || !this.radio;
+    exactDays() {
+      const exactDays = this.tableFlights.filter((f) => {
+        return f.vacationDays === this.totalDays || !this.totalDays;
       });
-      this.tableFlights = twoWeeks;
+      this.tableFlights = exactDays;
     },
     disableItemOrigin(item) {
       if (item.value === this.flight.destination) {

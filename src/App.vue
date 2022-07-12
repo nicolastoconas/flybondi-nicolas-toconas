@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar app color="white" dark>
+    <v-app-bar app>
       <div class="d-flex align-center">
         <v-img
           alt="flybondi Logo"
@@ -13,11 +13,15 @@
       </div>
 
       <v-spacer></v-spacer>
-
-      <v-btn href="#" target="_blank" text color="yellow">
-        <span class="mr-2">Mis vuelos</span>
-        <v-icon>mdi-airplane</v-icon>
-      </v-btn>
+      <div class="mt-6">
+        <v-switch
+          v-model="$vuetify.theme.dark"
+          inset
+          label="Modo nocturno"
+          persistent-hint
+          color="#f9ba15"
+        ></v-switch>
+      </div>
     </v-app-bar>
 
     <v-main>
@@ -28,10 +32,18 @@
         :flights="flights"
         @flightsFiltered="flightsFiltered"
       />
+      <v-col v-if="loading" class="text-center">
+        <v-progress-circular
+          indeterminate
+          color="#f9ba15"
+        ></v-progress-circular>
+      </v-col>
       <TableFlights
         :itemsTable="itemsTable"
         :headers="headers"
+        @dialog="dialog"
       />
+      <ModalFlights v-if="show" @dialog="dialog" />
     </v-main>
   </v-app>
 </template>
@@ -39,6 +51,7 @@
 <script>
 import SelectFlights from "./components/SelectFlights";
 import TableFlights from "./components/TableFlights";
+import ModalFlights from "./components/ModalFlights";
 import axios from "axios";
 
 export default {
@@ -47,6 +60,7 @@ export default {
   components: {
     SelectFlights,
     TableFlights,
+    ModalFlights,
   },
 
   data: () => ({
@@ -75,6 +89,8 @@ export default {
       { text: "Asientos disponibles (VUELTA)", value: "availabilityOnReturn" },
       { text: "Días de vacaciones", value: "vacationDays" },
     ],
+    show: false,
+    loading: false,
   }),
 
   created() {
@@ -87,7 +103,15 @@ export default {
       this.flights = response.data;
     },
     flightsFiltered(itemsTable) {
-      this.itemsTable = itemsTable;
+      this.loading = true;
+      this.itemsTable = [];
+      setTimeout(() => {
+        this.itemsTable = itemsTable;
+        this.loading = false;
+      }, 1000);
+    },
+    dialog(item) {
+      this.show = item;
     },
   },
 };

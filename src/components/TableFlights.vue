@@ -7,7 +7,7 @@
           :items="itemsTable"
           :items-per-page="15"
           @click:row="select"
-          class="elevation-1"
+          class="elevation-4"
           :sort-by="['departureDate', 'returnDate']"
           :sort-desc="[false, false]"
         ></v-data-table>
@@ -24,7 +24,8 @@ export default {
   data: () => ({}),
   methods: {
     select(item) {
-      console.log(item);
+      localStorage.setItem("flight", JSON.stringify(item));
+      this.$emit("dialog", true);
     },
   },
 };

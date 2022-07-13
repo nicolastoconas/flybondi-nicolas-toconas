@@ -25,24 +25,21 @@
     </v-app-bar>
 
     <v-main>
-      <SelectFlights
-        :origins="origins"
-        :destinations="destinations"
-        :prices="prices"
-        :flights="flights"
-        @flightsFiltered="flightsFiltered"
-      />
+      <SelectFlights :flights="flights" @flightsFiltered="flightsFiltered" />
       <v-col v-if="loading" class="text-center">
         <v-progress-circular
           indeterminate
           color="#f9ba15"
         ></v-progress-circular>
       </v-col>
-      <TableFlights
-        :itemsTable="itemsTable"
-        :headers="headers"
-        @dialog="dialog"
-      />
+      <transition name="fade">
+        <TableFlights
+          v-if="searching && !loading"
+          :itemsTable="itemsTable"
+          :headers="headers"
+          @dialog="dialog"
+        />
+      </transition>
       <ModalFlights v-if="show" @dialog="dialog" />
     </v-main>
   </v-app>
@@ -65,19 +62,6 @@ export default {
 
   data: () => ({
     flights: [],
-    origins: [
-      { name: "Cordoba", value: "COR" },
-      { name: "Mendoza", value: "MDZ" },
-      { name: "Bariloche", value: "BRC" },
-      { name: "Buenos Aires", value: "EPA" },
-    ],
-    destinations: [
-      { name: "Cordoba", value: "COR" },
-      { name: "Mendoza", value: "MDZ" },
-      { name: "Bariloche", value: "BRC" },
-      { name: "Buenos Aires", value: "EPA" },
-    ],
-    prices: [400, 600, 800],
     itemsTable: [],
     headers: [
       { text: "Origen", value: "origin" },
@@ -88,10 +72,11 @@ export default {
       { text: "Asientos disponibles (IDA)", value: "availabilityOnDeparture" },
       { text: "Asientos disponibles (VUELTA)", value: "availabilityOnReturn" },
       { text: "Días de vacaciones", value: "vacationDays" },
-      { text: 'Actions', value: 'actions', sortable: false },
+      { text: "Detalles", value: "actions", sortable: false },
     ],
     show: false,
     loading: false,
+    searching: false,
   }),
 
   created() {
@@ -100,12 +85,17 @@ export default {
 
   methods: {
     async getDataFlights() {
-      const response = await axios.get("/flights.json");
-      this.flights = response.data;
+      try {
+        const response = await axios.get("/flights.json");
+        this.flights = response.data;
+      } catch (err) {
+        console.error(err);
+      }
     },
-    flightsFiltered(itemsTable) {
+    flightsFiltered(itemsTable, val) {
       this.loading = true;
       this.itemsTable = [];
+      this.searching = val;
       setTimeout(() => {
         this.itemsTable = itemsTable;
         this.loading = false;
@@ -117,3 +107,14 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

@@ -10,7 +10,7 @@
             menu-props="auto"
             label="Origen"
             hide-details
-            :items="origins"
+            :items="destinationsFullName"
             :item-disabled="disableItemOrigin"
             single-line
             color="#f9ba15"
@@ -28,11 +28,12 @@
             menu-props="auto"
             label="Destino (Opcional)"
             hide-details
-            :items="destinations"
+            :items="destinationsFullName"
             prepend-icon="mdi-map"
             :item-disabled="disableItemDestination"
             single-line
             color="#f9ba15"
+            :disabled="!flight.origin"
           >
             <template v-slot:prepend>
               <v-icon color="#f9ba15"> mdi-airplane-landing </v-icon>
@@ -166,7 +167,7 @@
 <script>
 export default {
   name: "SelectFlights",
-  props: ["origins", "destinations", "prices", "flights"],
+  props: ["flights"],
 
   data: () => ({
     modal: true,
@@ -182,6 +183,13 @@ export default {
     noLimit: false,
     totalDays: 14,
     disabled: false,
+    destinationsFullName: [
+      { value: "COR", name: "Cordoba" },
+      { value: "MDZ", name: "Mendoza" },
+      { value: "EPA", name: "Buenos Aires" },
+      { value: "BRC", name: "Bariloche" },
+    ],
+    prices: [400, 600, 800],
   }),
 
   methods: {
@@ -234,8 +242,8 @@ export default {
           totalPrice: `$ ${(e[0].price + e[1].price).toFixed(2)}`,
           priceDeparture: e[0].price,
           priceReturn: e[1].price,
-          origin: e[0].origin,
-          destination: e[0].destination,
+          origin: this.checkName(e[0].origin),
+          destination: this.checkName(e[0].destination),
           departureDate: e[0].data,
           returnDate: e[1].data,
           availabilityOnDeparture: e[0].availability,
@@ -248,7 +256,7 @@ export default {
       if (this.exactDateSearch) this.exactDate();
       if (!this.noLimit) this.exactDays();
 
-      this.$emit("flightsFiltered", this.tableFlights);
+      this.$emit("flightsFiltered", this.tableFlights, true);
     },
     exactDate() {
       const exact = this.tableFlights.filter((f) => {
@@ -265,12 +273,44 @@ export default {
       this.tableFlights = exactDays;
     },
     disableItemOrigin(item) {
-      if (item.value === this.flight.destination) {
+      if (
+        item.value === this.flight.destination ||
+        (item.value !== "COR" &&
+          this.flight.destination === "MDZ" &&
+          this.flight.destination !== "") ||
+        (item.value !== "BRC" &&
+          this.flight.destination === "EPA" &&
+          this.flight.destination !== "") ||
+        (item.value !== "COR" &&
+          item.value !== "EPA" &&
+          this.flight.destination === "BRC" &&
+          this.flight.destination !== "") ||
+        (item.value !== "BRC" &&
+          item.value !== "MDZ" &&
+          this.flight.destination === "COR" &&
+          this.flight.destination !== "")
+      ) {
         return true;
       }
     },
     disableItemDestination(item) {
-      if (item.value === this.flight.origin) {
+      if (
+        item.value === this.flight.origin ||
+        (item.value !== "COR" &&
+          this.flight.origin === "MDZ" &&
+          this.flight.origin !== "") ||
+        (item.value !== "BRC" &&
+          this.flight.origin === "EPA" &&
+          this.flight.origin !== "") ||
+        (item.value !== "COR" &&
+          item.value !== "EPA" &&
+          this.flight.origin === "BRC" &&
+          this.flight.origin !== "") ||
+        (item.value !== "BRC" &&
+          item.value !== "MDZ" &&
+          this.flight.origin === "COR" &&
+          this.flight.origin !== "")
+      ) {
         return true;
       }
     },
@@ -279,6 +319,12 @@ export default {
         (new Date(dateOne).getTime() - new Date(dateTwo).getTime()) /
           (1000 * 60 * 60 * 24)
       );
+    },
+    checkName(name) {
+      this.destinationsFullName.some((e) =>
+        e.value === name ? (name = e.name) : ""
+      );
+      return name;
     },
   },
 
@@ -295,7 +341,7 @@ export default {
       }
       const diff = this.daysOfVacations(this.dates[1], this.dates[0]);
       if (diff < this.totalDays) {
-        this.totalDays = diff
+        this.totalDays = diff;
       }
     },
 

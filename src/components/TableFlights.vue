@@ -10,10 +10,19 @@
           class="elevation-4"
           :sort-by="['departureDate', 'returnDate']"
           :sort-desc="[false, false]"
-          style="cursor:pointer"
+          style="cursor: pointer"
+          no-data-text="No hay vuelos disponibles, intente otra fecha"
         >
           <template v-slot:[`item.actions`]="{ item }">
-            <v-btn color="#f9ba15" rounded x-small class="mr-2" @click="select(item)"> Ver detalle </v-btn>
+            <v-btn
+              color="#f9ba15"
+              rounded
+              x-small
+              class="mr-2"
+              @click="select(item)"
+            >
+              Ver detalle
+            </v-btn>
           </template></v-data-table
         >
       </v-col>
